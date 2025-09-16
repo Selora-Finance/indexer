@@ -1,0 +1,106 @@
+# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
+name: cedarfi-metadex
+networks:
+    - id: 20994
+      start_block: 3803585
+      rpc_config:
+          url: https://burned-muddy-butterfly.fluent-testnet.quiknode.pro/fa1e4509eebd04205834dc1a9cc2f8db4016822d/
+          interval_ceiling: 5
+          initial_block_interval: 5
+      contracts:
+          - name: PoolFactory
+            abi_file_path: ./abis/V2PoolFactory.json
+            address:
+                - 0xAa97c394C26c122F926fEB015237C82a62A98D51
+            handler: ./src/handlers/base/V2PoolFactory
+            events:
+                - event: PoolCreated(address indexed token0, address indexed token1, bool indexed stable, address pool, uint256)
+          - name: Pool
+            abi_file_path: ./abis/V2Pool.json
+            handler: ./src/handlers/core/V2Pools
+            events:
+                - event: Swap(address indexed sender,address indexed to,uint256 amount0In,uint256 amount1In,uint256 amount0Out,uint256 amount1Out)
+                - event: Sync(uint256 reserve0, uint256 reserve1)
+                - event: Burn(address indexed sender, address indexed to, uint256 amount0, uint256 amount1)
+                - event: Mint(address indexed sender, uint256 amount0, uint256 amount1)
+                - event: Fees(address indexed sender, uint256 amount0, uint256 amount1)
+                - event: Transfer(address indexed from, address indexed to, uint256 value)
+                - event: Claim(address indexed sender, address indexed recipient, uint256 amount0, uint256 amount1)
+          - name: CLFactory
+            address:
+                - 0x6c777E33960A4530c5117090113c08378F7047b4
+            handler: ./src/handlers/base/CLFactory
+            events:
+                - event: PoolCreated(address indexed token0, address indexed token1, int24 indexed tickSpacing, address pool)
+          - name: CLPool
+            abi_file_path: ./abis/V3Pool.json
+            handler: ./src/handlers/core/CLPools
+            events:
+                - event: Swap(address indexed sender, address indexed recipient, int256 amount0, int256 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick)
+                - event: Mint(address sender, address indexed owner, int24 indexed tickLower, int24 indexed tickUpper, uint128 amount, uint256 amount0, uint256 amount1)
+                - event: Collect(address indexed owner, address recipient, int24 indexed tickLower, int24 indexed tickUpper, uint128 amount0, uint128 amount1)
+                - event: Burn(address indexed owner, int24 indexed tickLower, int24 indexed tickUpper, uint128 amount, uint256 amount0, uint256 amount1)
+          - name: Voter
+            abi_file_path: ./abis/Voter.json
+            address:
+                - 0xfdA9d44baa83D12859A062703603FcC0e2820837
+            handler: ./src/handlers/voting/Voter
+            events:
+                - event: GaugeCreated(address indexed poolFactory, address indexed votingRewardsFactory, address indexed gaugeFactory, address pool, address bribeVotingReward, address feeVotingReward, address gauge, address creator)
+                - event: GaugeKilled(address indexed gauge)
+                - event: GaugeRevived(address indexed gauge)
+                - event: Voted(address indexed voter, address indexed pool, uint256 indexed tokenId, uint256 weight, uint256 totalWeight, uint256 timestamp)
+          - name: Gauge
+            abi_file_path: ./abis/Gauge.json
+            handler: ./src/handlers/staking/Gauge
+            events:
+                - event: Withdraw(address indexed from, uint256 amount)
+                - event: Deposit(address indexed from, address indexed to, uint256 amount)
+                - event: NotifyReward(address indexed from, uint256 amount)
+                - event: ClaimRewards(address indexed from, uint256 amount)
+          - name: CLGauge
+            abi_file_path: ./abis/CLGauge.json
+            handler: ./src/handlers/staking/CLGauge
+            events:
+                - event: Deposit(address indexed user, uint256 indexed tokenId, uint128 indexed liquidityToStake)
+                - event: Withdraw(address indexed user, uint256 indexed tokenId, uint128 indexed liquidityToStake)
+                - event: NotifyReward(address indexed from, uint256 amount)
+                - event: ClaimRewards(address indexed from, uint256 amount)
+          - name: VotingReward
+            abi_file_path: ./abis/VotingReward.json
+            handler: ./src/handlers/voting/VotingReward
+            events:
+                - event: ClaimRewards(address indexed from, address indexed reward, uint256 amount)
+                - event: NotifyReward(address indexed from, address indexed reward, uint256 indexed epoch, uint256 amount)
+          - name: VotingEscrow
+            abi_file_path: ./abis/VotingEscrow.json
+            address:
+                - 0x92eC9EE67675E672520f0804F23dD9f372bfb855
+            handler: ./src/handlers/voting/VotingEscrow
+            events:
+                - event: Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
+                - event: Deposit(address indexed provider, uint256 indexed tokenId, uint8 indexed depositType, uint256 value, uint256 locktime, uint256 ts)
+                - event: Withdraw(address indexed provider, uint256 indexed tokenId, uint256 value, uint256 ts)
+                - event: LockPermanent(address indexed _owner, uint256 indexed _tokenId, uint256 amount, uint256 _ts)
+                - event: UnlockPermanent(address indexed _owner, uint256 indexed _tokenId, uint256 amount, uint256 _ts)
+                - event: Merge(address indexed _sender, uint256 indexed _from, uint256 indexed _to, uint256 _amountFrom, uint256 _amountTo, uint256 _amountFinal, uint256 _locktime, uint256 _ts)
+                - event: Split(uint256 indexed _from, uint256 indexed _tokenId1, uint256 indexed _tokenId2, address _sender, uint256 _splitAmount1, uint256 _splitAmount2, uint256 _locktime, uint256 _ts)
+                - event: CreateManaged(address indexed _to, uint256 indexed _mTokenId, address indexed _from, address _lockedManagedReward, address _freeManagedReward)
+                - event: DepositManaged(address indexed _owner, uint256 indexed _tokenId, uint256 indexed _mTokenId, uint256 _weight, uint256 _ts)
+                - event: WithdrawManaged(address indexed _owner, uint256 indexed _tokenId, uint256 indexed _mTokenId, uint256 _weight, uint256 _ts)
+          - name: NonfungiblePositionManager
+            abi_file_path: ./abis/NFPM.json
+            address:
+                - 0x1CC255Fb449181ae46Ee302D108549ba8B67752B
+            handler: ./src/handlers/base/NFPM
+            events:
+                - event: Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
+                - event: IncreaseLiquidity(uint256 indexed tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)
+                - event: DecreaseLiquidity(uint256 indexed tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)
+unordered_multichain_mode: true
+field_selection:
+    transaction_fields:
+        - hash
+        - from
+        - to
+        - transactionIndex

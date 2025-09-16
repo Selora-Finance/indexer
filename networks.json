@@ -1,0 +1,20 @@
+{
+    "mainnet": {
+        "PoolFactory": {
+            "address": "0xAa97c394C26c122F926fEB015237C82a62A98D51",
+            "startBlock": 3803585
+        },
+        "CLFactory": {
+            "address": "0x6c777E33960A4530c5117090113c08378F7047b4"
+        },
+        "Voter": {
+            "address": "0xfdA9d44baa83D12859A062703603FcC0e2820837"
+        },
+        "VotingEscrow": {
+            "address": "0x92eC9EE67675E672520f0804F23dD9f372bfb855"
+        },
+        "NonfungiblePositionManager": {
+            "address": "0x1CC255Fb449181ae46Ee302D108549ba8B67752B"
+        }
+    }
+}
