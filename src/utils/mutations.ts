@@ -153,7 +153,7 @@ export function createLPPosition(event: ethereum.Event, to: Address, amount: Big
     return position;
 }
 
-export function createGaugePosition(event: ethereum.Event, to: Address, amount: BigInt, tokenId: BigInt | null) {
+export function createGaugePosition(event: ethereum.Event, to: Address, amount: BigInt) {
     const gaugeId = event.address.toHex();
     const gauge = Gauge.load(gaugeId) as Gauge;
     const userId = to.toHex();

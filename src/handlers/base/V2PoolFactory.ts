@@ -3,9 +3,9 @@ import { PoolCreated as V2PoolCreatedEvent } from '../../../generated/PoolFactor
 import { Bundle, Pool, Statistics, Token } from '../../../generated/schema';
 import { Pool as PoolTemplate } from '../../../generated/templates';
 import { BD_ZERO, BI_ONE, BI_ZERO } from '../../utils/constants';
-import { ERC20 } from '../../utils/onchain/erc20';
+import { ERC20 } from '../../../generated/PoolFactory/ERC20';
 
-export function handlePoolCreated(event: V2PoolCreatedEvent) {
+export function handlePoolCreated(event: V2PoolCreatedEvent): void {
     const id = event.params.pool.toHex();
     const token0Id = event.params.token0.toHex();
     const token1Id = event.params.token1.toHex();
@@ -34,13 +34,17 @@ export function handlePoolCreated(event: V2PoolCreatedEvent) {
     if (token0 === null) {
         token0 = new Token(token0Id);
         // Contract
-        const contract = ERC20.bind(token0Id);
-        const symbol = contract.symbol();
-        const decimals = contract.decimals();
-        const name = contract.name();
-        const totalSupply = contract.totalSupply();
+        const contract = ERC20.bind(Address.fromHexString(token0Id));
+        const symbol = contract.try_symbol();
+        const decimals = contract.try_decimals();
+        const name = contract.try_name();
 
-        if (symbol.reverted || decimals.reverted || name.reverted || totalSupply.reverted) {
+        if (symbol.reverted || decimals.reverted || name.reverted) {
+            log.debug('Could not fetch token details', []);
+            return;
+        }
+
+        if (symbol.reverted || decimals.reverted || name.reverted) {
             log.debug('Could not fetch token details', []);
             return;
         }
@@ -64,10 +68,10 @@ export function handlePoolCreated(event: V2PoolCreatedEvent) {
     if (token1 === null) {
         token1 = new Token(token1Id);
         // Contract
-        const contract = ERC20.bind(token1Id);
-        const symbol = contract.symbol();
-        const decimals = contract.decimals();
-        const name = contract.name();
+        const contract = ERC20.bind(Address.fromHexString(token1Id));
+        const symbol = contract.try_symbol();
+        const decimals = contract.try_decimals();
+        const name = contract.try_name();
 
         if (symbol.reverted || decimals.reverted || name.reverted) {
             log.debug('Could not fetch token details', []);
@@ -91,8 +95,8 @@ export function handlePoolCreated(event: V2PoolCreatedEvent) {
     }
 
     // Bind pool contract
-    const contract = ERC20.bind(id);
-    const name = contract.name();
+    const contract = ERC20.bind(Address.fromHexString(id));
+    const name = contract.try_name();
     // Must pass
     if (name.reverted) {
         log.debug('Could not fetch name for new pool', []);

@@ -13,8 +13,8 @@ export function handleTransfer(event: TransferEvent) {
     const recipient = event.params.to;
     const isBurn = recipient.toHex() === ZERO_ADDRESS;
     const isTransfer = sender.toHex() !== ZERO_ADDRESS && recipient.toHex() !== ZERO_ADDRESS;
+    const isMint = sender.toHex() === ZERO_ADDRESS;
     const tokenId = event.params.tokenId;
-    let clPosition = CLPosition.load(tokenId.toString());
     let user = User.load(recipient.toHex());
 
     if (user === null) {
@@ -23,33 +23,48 @@ export function handleTransfer(event: TransferEvent) {
         user.save();
     }
 
-    if (clPosition === null) {
-        clPosition = new CLPosition(tokenId.toString());
-        clPosition.transactionHash = event.transaction.hash;
+    if (isMint) {
+        const clPositionId = deriveCLPosId(event.transaction.hash.toHex());
+        const clPosition = CLPosition.load(clPositionId) as CLPosition;
+        // LP position has been created already, so update
+        const lpId = event.address.toHex() + '-' + clPosition.pool;
+        const lp = LiquidityPosition.load(lpId) as LiquidityPosition;
+        lp.account = user.id;
+        lp.clPositionTokenId = tokenId;
+        lp.save();
+
+        // Create new CLPosition entity
+        const newCLPositionId = deriveCLPosId(tokenId);
+        const newCLPosition = new CLPosition(newCLPositionId);
+        newCLPosition.pool = clPosition.pool;
+        newCLPosition.save();
     }
 
-    if (!isBurn) clPosition.owner = user.id;
-    else clPosition.owner = null;
-
-    clPosition.save();
-
-    if (isTransfer || isBurn) {
-        // LP position has been created already, so update
-        const lpId = deriveCLPosId(tokenId);
+    if (isTransfer) {
+        const clPositionId = deriveCLPosId(tokenId);
+        const clPosition = CLPosition.load(clPositionId) as CLPosition;
+        const lpId = event.address.toHex() + '-' + clPosition.pool;
         const lp = LiquidityPosition.load(lpId) as LiquidityPosition;
-        if (isTransfer) lp.account = user.id;
-        else {
-            lp.position = BD_ZERO;
-            lp.account = null;
-        }
+        lp.account = user.id;
+        lp.save();
+    }
 
+    if (isBurn) {
+        const clPositionId = deriveCLPosId(tokenId);
+        const clPosition = CLPosition.load(clPositionId) as CLPosition;
+        const lpId = event.address.toHex() + '-' + clPosition.pool;
+        const lp = LiquidityPosition.load(lpId) as LiquidityPosition;
+        lp.account = null;
+        lp.position = BD_ZERO;
         lp.save();
     }
 }
 
 export function handleIncreaseLiquidity(event: IncreaseLiquidityEvent) {
     const tokenId = event.params.tokenId;
-    const lpId = deriveCLPosId(tokenId);
+    const clPositionId = deriveCLPosId(tokenId);
+    const clPosition = CLPosition.load(clPositionId) as CLPosition;
+    const lpId = event.address.toHex() + '-' + clPosition.pool;
     const lp = LiquidityPosition.load(lpId) as LiquidityPosition;
     const amount = divideByBase(event.params.liquidity);
 
@@ -59,7 +74,9 @@ export function handleIncreaseLiquidity(event: IncreaseLiquidityEvent) {
 
 export function handleDecreaseLiquidity(event: DecreaseLiquidityEvent) {
     const tokenId = event.params.tokenId;
-    const lpId = deriveCLPosId(tokenId);
+    const clPositionId = deriveCLPosId(tokenId);
+    const clPosition = CLPosition.load(clPositionId) as CLPosition;
+    const lpId = event.address.toHex() + '-' + clPosition.pool;
     const lp = LiquidityPosition.load(lpId) as LiquidityPosition;
     const amount = divideByBase(event.params.liquidity);
 

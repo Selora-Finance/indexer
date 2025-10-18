@@ -21,6 +21,10 @@ dataSources:
           abis:
               - name: PoolFactory
                 file: ./abis/V2PoolFactory.json
+              - name: ERC20
+                file: ./abis/ERC20.json
+              - name: Oracle
+                file: ./abis/Oracle.json
           eventHandlers:
               - event: PoolCreated(indexed address,indexed address,indexed bool,address,uint256)
                 handler: handlePoolCreated
@@ -42,6 +46,10 @@ dataSources:
           abis:
               - name: CLFactory
                 file: ./abis/V3PoolFactory.json
+              - name: ERC20
+                file: ./abis/ERC20.json
+              - name: Oracle
+                file: ./abis/Oracle.json
           eventHandlers:
               - event: PoolCreated(indexed address,indexed address,indexed int24,address)
                 handler: handlePoolCreated
@@ -90,7 +98,7 @@ dataSources:
                 handler: handleWhitelistNFT
               - event: WhitelistToken(indexed address,indexed address,indexed bool)
                 handler: handleWhitelistToken
-          file: ./src/voter.ts
+          file: ./src/handlers/voting/Voter.ts
     - kind: ethereum
       name: VotingEscrow
       network: mainnet
@@ -163,7 +171,7 @@ dataSources:
                 handler: handleWithdraw
               - event: WithdrawManaged(indexed address,indexed uint256,indexed uint256,uint256,uint256)
                 handler: handleWithdrawManaged
-          file: ./src/voting-escrow.ts
+          file: ./src/handlers/voting/VotingEscrow.ts
     - kind: ethereum
       name: NonfungiblePositionManager
       network: mainnet
@@ -207,6 +215,14 @@ templates:
           eventHandlers:
               - event: Swap(indexed address,indexed address,uint256,uint256,uint256,uint256)
                 handler: handleSwap
+              - event: Burn(indexed address,indexed address,uint256,uint256)
+                handler: handleBurn
+              - event: Mint(indexed address,uint256,uint256)
+                handler: handleMint
+              - event: Fees(indexed address,uint256,uint256)
+                handler: handleFees
+              - event: Sync(uint256,uint256)
+                handler: handleSync
           file: ./src/handlers/core/V2Pools.ts
     - name: CLPool
       kind: ethereum
@@ -225,4 +241,76 @@ templates:
           eventHandlers:
               - event: Swap(indexed address,indexed address,int256,int256,uint160,uint128,int24)
                 handler: handleSwap
-          file: ./src/handlers/core/V2Pools.ts
+              - event: Burn(indexed address,indexed int24,indexed int24,uint128,uint256,uint256)
+                handler: handleBurn
+              - event: Mint(address,indexed address,indexed int24,indexed int24,uint128,uint256,uint256)
+                handler: handleMint
+          file: ./src/handlers/core/CLPools.ts
+    - name: Gauge
+      kind: ethereum
+      network: mainnet
+      source:
+          abi: Gauge
+      mapping:
+          kind: ethereum/events
+          apiVersion: 0.0.7
+          language: wasm/assemblyscript
+          entities:
+              - Gauge
+          abis:
+              - name: Gauge
+                file: ./abis/Gauge.json
+          eventHandlers:
+              - event: Withdraw(indexed address,uint256)
+                handler: handleWithdraw
+              - event: Deposit(indexed address,indexed address,uint256)
+                handler: handleDeposit
+              - event: NotifyReward(indexed address,uint256)
+                handler: handleNotifyReward
+              - event: ClaimRewards(indexed address,uint256)
+                handler: handleClaimRewards
+          file: ./src/handlers/staking/Gauge.ts
+    - name: CLGauge
+      kind: ethereum
+      network: mainnet
+      source:
+          abi: CLGauge
+      mapping:
+          kind: ethereum/events
+          apiVersion: 0.0.7
+          language: wasm/assemblyscript
+          entities:
+              - Gauge
+          abis:
+              - name: CLGauge
+                file: ./abis/CLGauge.json
+          eventHandlers:
+              - event: Withdraw(indexed address,indexed uint256,indexed uint128)
+                handler: handleWithdraw
+              - event: Deposit(indexed address,indexed uint256,indexed uint128)
+                handler: handleDeposit
+              - event: NotifyReward(indexed address,uint256)
+                handler: handleNotifyReward
+              - event: ClaimRewards(indexed address,uint256)
+                handler: handleClaimRewards
+          file: ./src/handlers/staking/CLGauge.ts
+    - name: VotingReward
+      kind: ethereum
+      network: mainnet
+      source:
+          abi: VotingReward
+      mapping:
+          kind: ethereum/events
+          apiVersion: 0.0.7
+          language: wasm/assemblyscript
+          entities:
+              - VotingReward
+          abis:
+              - name: VotingReward
+                file: ./abis/VotingReward.json
+          eventHandlers:
+              - event: NotifyReward(indexed address,indexed address,indexed uint256,uint256)
+                handler: handleNotifyReward
+              - event: ClaimRewards(indexed address,indexed address,uint256)
+                handler: handleClaimReward
+          file: ./src/handlers/voting/VotingReward.ts

@@ -2,8 +2,8 @@ import { BigDecimal, BigInt } from '@graphprotocol/graph-ts';
 
 // Chains
 export enum Chains {
-    MON_TESTNET = 10143,
-    FLUENT_TESTNET = 20994,
+    MON_TESTNET = 'monad-testnet',
+    FLUENT_TESTNET = 'fluent-testnet',
 }
 
 // Bigints

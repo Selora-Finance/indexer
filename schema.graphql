@@ -276,6 +276,5 @@ type LiquidityManager @entity {
 
 type CLPosition @entity {
     id: ID!
-    transactionHash: Bytes! @index
-    owner: User
+    pool: Pool! @index
 }

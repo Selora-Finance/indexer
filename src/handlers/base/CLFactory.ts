@@ -1,11 +1,11 @@
 import { Address, BigInt, log } from '@graphprotocol/graph-ts';
 import { PoolCreated as V3PoolCreatedEvent } from '../../../generated/CLFactory/CLFactory';
 import { Bundle, Pool, Statistics, Token } from '../../../generated/schema';
+import { ERC20 } from '../../../generated/CLFactory/ERC20';
 import { BD_ZERO, BI_ONE, BI_ZERO } from '../../utils/constants';
-import { ERC20 } from '../../utils/onchain/erc20';
 import { CLPool as CLPoolTemplate } from '../../../generated/templates';
 
-export function handlePoolCreated(event: V3PoolCreatedEvent) {
+export function handlePoolCreated(event: V3PoolCreatedEvent): void {
     const id = event.params.pool.toHex();
     const token0Id = event.params.token0.toHex();
     const token1Id = event.params.token1.toHex();
@@ -34,13 +34,12 @@ export function handlePoolCreated(event: V3PoolCreatedEvent) {
     if (token0 === null) {
         token0 = new Token(token0Id);
         // Contract
-        const contract = ERC20.bind(token0Id);
-        const symbol = contract.symbol();
-        const decimals = contract.decimals();
-        const name = contract.name();
-        const totalSupply = contract.totalSupply();
+        const contract = ERC20.bind(Address.fromHexString(token0Id));
+        const symbol = contract.try_symbol();
+        const decimals = contract.try_decimals();
+        const name = contract.try_name();
 
-        if (symbol.reverted || decimals.reverted || name.reverted || totalSupply.reverted) {
+        if (symbol.reverted || decimals.reverted || name.reverted) {
             log.debug('Could not fetch token details', []);
             return;
         }
@@ -64,10 +63,10 @@ export function handlePoolCreated(event: V3PoolCreatedEvent) {
     if (token1 === null) {
         token1 = new Token(token1Id);
         // Contract
-        const contract = ERC20.bind(token1Id);
-        const symbol = contract.symbol();
-        const decimals = contract.decimals();
-        const name = contract.name();
+        const contract = ERC20.bind(Address.fromHexString(token1Id));
+        const symbol = contract.try_symbol();
+        const decimals = contract.try_decimals();
+        const name = contract.try_name();
 
         if (symbol.reverted || decimals.reverted || name.reverted) {
             log.debug('Could not fetch token details', []);
