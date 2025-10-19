@@ -15,6 +15,11 @@ enum LPManagementProvider {
     STEER
 }
 
+enum VotingRewardsType {
+    FEE
+    BRIBE
+}
+
 type Statistics @entity {
     id: ID!
     txCount: BigInt!
@@ -277,4 +282,10 @@ type LiquidityManager @entity {
 type CLPosition @entity {
     id: ID!
     pool: Pool! @index
+}
+
+type VotingRewards @entity {
+    id: ID!
+    gauge: Gauge! @index
+    votingRewardsType: VotingRewardsType!
 }

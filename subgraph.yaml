@@ -6,11 +6,11 @@ schema:
 dataSources:
     - kind: ethereum
       name: PoolFactory
-      network: mainnet
+      network: fluent-testnet
       source:
-          address: '0xAa97c394C26c122F926fEB015237C82a62A98D51'
           abi: PoolFactory
-          startBlock: 3803585
+          address: '0x57086f4122471783E78A72Bd2aE8db74cb5c403A'
+          startBlock: 5987331
       mapping:
           kind: ethereum/events
           apiVersion: 0.0.7
@@ -31,11 +31,11 @@ dataSources:
           file: ./src/handlers/base/V2PoolFactory.ts
     - kind: ethereum
       name: CLFactory
-      network: mainnet
+      network: fluent-testnet
       source:
-          address: '0x6c777E33960A4530c5117090113c08378F7047b4'
           abi: CLFactory
-          startBlock: 3803585
+          address: '0x74359B347D1225377577091392360C3FA0464468'
+          startBlock: 6051145
       mapping:
           kind: ethereum/events
           apiVersion: 0.0.7
@@ -56,33 +56,22 @@ dataSources:
           file: ./src/handlers/base/CLFactory.ts
     - kind: ethereum
       name: Voter
-      network: mainnet
+      network: fluent-testnet
       source:
-          address: '0xfdA9d44baa83D12859A062703603FcC0e2820837'
           abi: Voter
-          startBlock: 3803585
+          address: '0x15227B716624d73f455dAd6D5931017fF6E19bE9'
+          startBlock: 5987397
       mapping:
           kind: ethereum/events
           apiVersion: 0.0.7
           language: wasm/assemblyscript
           entities:
-              - Abstained
-              - DistributeReward
-              - GaugeCreated
-              - GaugeKilled
-              - GaugeRevived
-              - NotifyReward
-              - Voted
-              - WhitelistNFT
-              - WhitelistToken
+              - Gauge
+              - VotingRewards
           abis:
               - name: Voter
                 file: ./abis/Voter.json
           eventHandlers:
-              - event: Abstained(indexed address,indexed address,indexed uint256,uint256,uint256,uint256)
-                handler: handleAbstained
-              - event: DistributeReward(indexed address,indexed address,uint256)
-                handler: handleDistributeReward
               - event: GaugeCreated(indexed address,indexed address,indexed
                     address,address,address,address,address,address)
                 handler: handleGaugeCreated
@@ -90,95 +79,61 @@ dataSources:
                 handler: handleGaugeKilled
               - event: GaugeRevived(indexed address)
                 handler: handleGaugeRevived
-              - event: NotifyReward(indexed address,indexed address,uint256)
-                handler: handleNotifyReward
-              - event: Voted(indexed address,indexed address,indexed uint256,uint256,uint256,uint256)
+              - event: Voted(indexed address,indexed address,indexed
+                    uint256,uint256,uint256,uint256)
                 handler: handleVoted
-              - event: WhitelistNFT(indexed address,indexed uint256,indexed bool)
-                handler: handleWhitelistNFT
-              - event: WhitelistToken(indexed address,indexed address,indexed bool)
-                handler: handleWhitelistToken
           file: ./src/handlers/voting/Voter.ts
     - kind: ethereum
       name: VotingEscrow
-      network: mainnet
+      network: fluent-testnet
       source:
-          address: '0x92eC9EE67675E672520f0804F23dD9f372bfb855'
           abi: VotingEscrow
-          startBlock: 3803585
+          address: '0xB8cB2492ebA6dBac44f89bF994Be602249015026'
+          startBlock: 5987368
       mapping:
           kind: ethereum/events
           apiVersion: 0.0.7
           language: wasm/assemblyscript
           entities:
-              - Approval
-              - ApprovalForAll
-              - BatchMetadataUpdate
-              - CreateManaged
-              - DelegateChanged
-              - DelegateVotesChanged
-              - Deposit
-              - DepositManaged
-              - LockPermanent
-              - Merge
-              - MetadataUpdate
-              - SetAllowedManager
-              - Split
-              - Supply
-              - Transfer
-              - UnlockPermanent
-              - Withdraw
-              - WithdrawManaged
+              - LockPosition
           abis:
               - name: VotingEscrow
                 file: ./abis/VotingEscrow.json
           eventHandlers:
-              - event: Approval(indexed address,indexed address,indexed uint256)
-                handler: handleApproval
-              - event: ApprovalForAll(indexed address,indexed address,bool)
-                handler: handleApprovalForAll
-              - event: BatchMetadataUpdate(uint256,uint256)
-                handler: handleBatchMetadataUpdate
-              - event: CreateManaged(indexed address,indexed uint256,indexed address,address,address)
+              - event: CreateManaged(indexed address,indexed uint256,indexed
+                    address,address,address)
                 handler: handleCreateManaged
-              - event: DelegateChanged(indexed address,indexed uint256,indexed uint256)
-                handler: handleDelegateChanged
-              - event: DelegateVotesChanged(indexed address,uint256,uint256)
-                handler: handleDelegateVotesChanged
-              - event: Deposit(indexed address,indexed uint256,indexed uint8,uint256,uint256,uint256)
+              - event: Deposit(indexed address,indexed uint256,indexed
+                    uint8,uint256,uint256,uint256)
                 handler: handleDeposit
-              - event: DepositManaged(indexed address,indexed uint256,indexed uint256,uint256,uint256)
+              - event: DepositManaged(indexed address,indexed uint256,indexed
+                    uint256,uint256,uint256)
                 handler: handleDepositManaged
               - event: LockPermanent(indexed address,indexed uint256,uint256,uint256)
                 handler: handleLockPermanent
               - event: Merge(indexed address,indexed uint256,indexed
                     uint256,uint256,uint256,uint256,uint256,uint256)
                 handler: handleMerge
-              - event: MetadataUpdate(uint256)
-                handler: handleMetadataUpdate
-              - event: SetAllowedManager(indexed address)
-                handler: handleSetAllowedManager
               - event: Split(indexed uint256,indexed uint256,indexed
                     uint256,address,uint256,uint256,uint256,uint256)
                 handler: handleSplit
-              - event: Supply(uint256,uint256)
-                handler: handleSupply
               - event: Transfer(indexed address,indexed address,indexed uint256)
                 handler: handleTransfer
               - event: UnlockPermanent(indexed address,indexed uint256,uint256,uint256)
                 handler: handleUnlockPermanent
               - event: Withdraw(indexed address,indexed uint256,uint256,uint256)
                 handler: handleWithdraw
-              - event: WithdrawManaged(indexed address,indexed uint256,indexed uint256,uint256,uint256)
+              - event: WithdrawManaged(indexed address,indexed uint256,indexed
+                    uint256,uint256,uint256)
                 handler: handleWithdrawManaged
           file: ./src/handlers/voting/VotingEscrow.ts
     - kind: ethereum
       name: NonfungiblePositionManager
-      network: mainnet
+      network: fluent-testnet
       source:
-          address: '0x1CC255Fb449181ae46Ee302D108549ba8B67752B'
           abi: NonfungiblePositionManager
-          startBlock: 3803585
+          address: '0x24e95fe9fF4D4F988911cfd9A5D9443b3E640C22'
+          startBlock: 6051182
       mapping:
           kind: ethereum/events
           apiVersion: 0.0.7
@@ -200,7 +155,7 @@ dataSources:
 templates:
     - name: Pool
       kind: ethereum
-      network: mainnet
+      network: fluent-testnet
       source:
           abi: V2Pool
       mapping:
@@ -226,7 +181,7 @@ templates:
           file: ./src/handlers/core/V2Pools.ts
     - name: CLPool
       kind: ethereum
-      network: mainnet
+      network: fluent-testnet
       source:
           abi: CLPool
       mapping:
@@ -243,12 +198,13 @@ templates:
                 handler: handleSwap
               - event: Burn(indexed address,indexed int24,indexed int24,uint128,uint256,uint256)
                 handler: handleBurn
-              - event: Mint(address,indexed address,indexed int24,indexed int24,uint128,uint256,uint256)
+              - event: Mint(address,indexed address,indexed int24,indexed
+                    int24,uint128,uint256,uint256)
                 handler: handleMint
           file: ./src/handlers/core/CLPools.ts
     - name: Gauge
       kind: ethereum
-      network: mainnet
+      network: fluent-testnet
       source:
           abi: Gauge
       mapping:
@@ -272,7 +228,7 @@ templates:
           file: ./src/handlers/staking/Gauge.ts
     - name: CLGauge
       kind: ethereum
-      network: mainnet
+      network: fluent-testnet
       source:
           abi: CLGauge
       mapping:
@@ -296,7 +252,7 @@ templates:
           file: ./src/handlers/staking/CLGauge.ts
     - name: VotingReward
       kind: ethereum
-      network: mainnet
+      network: fluent-testnet
       source:
           abi: VotingReward
       mapping:
@@ -312,5 +268,5 @@ templates:
               - event: NotifyReward(indexed address,indexed address,indexed uint256,uint256)
                 handler: handleNotifyReward
               - event: ClaimRewards(indexed address,indexed address,uint256)
-                handler: handleClaimReward
+                handler: handleClaimRewards
           file: ./src/handlers/voting/VotingReward.ts

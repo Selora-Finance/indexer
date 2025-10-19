@@ -8,7 +8,7 @@ import {
 } from '../../../generated/NonfungiblePositionManager/NonfungiblePositionManager';
 import { CLPosition, LiquidityPosition, User } from '../../../generated/schema';
 
-export function handleTransfer(event: TransferEvent) {
+export function handleTransfer(event: TransferEvent): void {
     const sender = event.params.from;
     const recipient = event.params.to;
     const isBurn = recipient.toHex() === ZERO_ADDRESS;
@@ -34,14 +34,14 @@ export function handleTransfer(event: TransferEvent) {
         lp.save();
 
         // Create new CLPosition entity
-        const newCLPositionId = deriveCLPosId(tokenId);
+        const newCLPositionId = deriveCLPosId(tokenId.toString());
         const newCLPosition = new CLPosition(newCLPositionId);
         newCLPosition.pool = clPosition.pool;
         newCLPosition.save();
     }
 
     if (isTransfer) {
-        const clPositionId = deriveCLPosId(tokenId);
+        const clPositionId = deriveCLPosId(tokenId.toString());
         const clPosition = CLPosition.load(clPositionId) as CLPosition;
         const lpId = event.address.toHex() + '-' + clPosition.pool;
         const lp = LiquidityPosition.load(lpId) as LiquidityPosition;
@@ -50,7 +50,7 @@ export function handleTransfer(event: TransferEvent) {
     }
 
     if (isBurn) {
-        const clPositionId = deriveCLPosId(tokenId);
+        const clPositionId = deriveCLPosId(tokenId.toString());
         const clPosition = CLPosition.load(clPositionId) as CLPosition;
         const lpId = event.address.toHex() + '-' + clPosition.pool;
         const lp = LiquidityPosition.load(lpId) as LiquidityPosition;
@@ -60,9 +60,9 @@ export function handleTransfer(event: TransferEvent) {
     }
 }
 
-export function handleIncreaseLiquidity(event: IncreaseLiquidityEvent) {
+export function handleIncreaseLiquidity(event: IncreaseLiquidityEvent): void {
     const tokenId = event.params.tokenId;
-    const clPositionId = deriveCLPosId(tokenId);
+    const clPositionId = deriveCLPosId(tokenId.toString());
     const clPosition = CLPosition.load(clPositionId) as CLPosition;
     const lpId = event.address.toHex() + '-' + clPosition.pool;
     const lp = LiquidityPosition.load(lpId) as LiquidityPosition;
@@ -72,9 +72,9 @@ export function handleIncreaseLiquidity(event: IncreaseLiquidityEvent) {
     lp.save();
 }
 
-export function handleDecreaseLiquidity(event: DecreaseLiquidityEvent) {
+export function handleDecreaseLiquidity(event: DecreaseLiquidityEvent): void {
     const tokenId = event.params.tokenId;
-    const clPositionId = deriveCLPosId(tokenId);
+    const clPositionId = deriveCLPosId(tokenId.toString());
     const clPosition = CLPosition.load(clPositionId) as CLPosition;
     const lpId = event.address.toHex() + '-' + clPosition.pool;
     const lp = LiquidityPosition.load(lpId) as LiquidityPosition;

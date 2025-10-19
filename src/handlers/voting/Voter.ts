@@ -1,11 +1,11 @@
-import { log } from '@graphprotocol/graph-ts';
+import { Address, log } from '@graphprotocol/graph-ts';
 import {
     GaugeCreated as GaugeCreatedEvent,
     GaugeKilled as GaugeKilledEvent,
     GaugeRevived as GaugeRevivedEvent,
     Voted as VotedEvent,
 } from '../../../generated/Voter/Voter';
-import { Gauge, LockPosition, Pool, Token } from '../../../generated/schema';
+import { Gauge, LockPosition, Pool, Token, VotingRewards } from '../../../generated/schema';
 import { ERC20 } from '../../../generated/CLFactory/ERC20';
 import { Gauge as GaugeContract } from '../../../generated/templates/Gauge/Gauge';
 import { BD_ZERO, BI_ZERO } from '../../utils/constants';
@@ -81,8 +81,19 @@ export function handleGaugeCreated(event: GaugeCreatedEvent): void {
         GaugeTemplate.create(event.params.gauge);
     }
 
-    VotingRewardTemplate.create(gauge.feeVotingReward);
-    VotingRewardTemplate.create(gauge.bribeVotingReward);
+    // Voting rewards
+    const feeVotingReward = new VotingRewards(gauge.feeVotingReward.toHex());
+    feeVotingReward.votingRewardsType = 'FEE';
+    feeVotingReward.gauge = gauge.id;
+    feeVotingReward.save();
+
+    const bribeVotingReward = new VotingRewards(gauge.bribeVotingReward.toHex());
+    bribeVotingReward.votingRewardsType = 'BRIBE';
+    bribeVotingReward.gauge = gauge.id;
+    bribeVotingReward.save();
+
+    VotingRewardTemplate.create(Address.fromBytes(gauge.feeVotingReward));
+    VotingRewardTemplate.create(Address.fromBytes(gauge.bribeVotingReward));
 }
 
 export function handleGaugeKilled(event: GaugeKilledEvent): void {

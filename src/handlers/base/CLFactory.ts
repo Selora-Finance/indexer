@@ -34,7 +34,7 @@ export function handlePoolCreated(event: V3PoolCreatedEvent): void {
     if (token0 === null) {
         token0 = new Token(token0Id);
         // Contract
-        const contract = ERC20.bind(Address.fromHexString(token0Id));
+        const contract = ERC20.bind(Address.fromString(token0Id));
         const symbol = contract.try_symbol();
         const decimals = contract.try_decimals();
         const name = contract.try_name();
@@ -44,7 +44,7 @@ export function handlePoolCreated(event: V3PoolCreatedEvent): void {
             return;
         }
 
-        token0.address = Address.fromHexString(token0Id);
+        token0.address = Address.fromString(token0Id);
         token0.derivedETH = BD_ZERO;
         token0.derivedUSD = BD_ZERO;
         token0.decimals = decimals.value;
@@ -63,7 +63,7 @@ export function handlePoolCreated(event: V3PoolCreatedEvent): void {
     if (token1 === null) {
         token1 = new Token(token1Id);
         // Contract
-        const contract = ERC20.bind(Address.fromHexString(token1Id));
+        const contract = ERC20.bind(Address.fromString(token1Id));
         const symbol = contract.try_symbol();
         const decimals = contract.try_decimals();
         const name = contract.try_name();
@@ -73,7 +73,7 @@ export function handlePoolCreated(event: V3PoolCreatedEvent): void {
             return;
         }
 
-        token1.address = Address.fromHexString(token1Id);
+        token1.address = Address.fromString(token1Id);
         token1.derivedETH = BD_ZERO;
         token1.derivedUSD = BD_ZERO;
         token1.decimals = decimals.value;
@@ -91,7 +91,7 @@ export function handlePoolCreated(event: V3PoolCreatedEvent): void {
 
     const pool = new Pool(id);
     pool.name = `CL-POS-${token0.symbol}/${token1.symbol}`;
-    pool.address = Address.fromHexString(id);
+    pool.address = Address.fromString(id);
     pool.token0 = token0.id;
     pool.token1 = token1.id;
     pool.createdAtBlockNumber = event.block.number;

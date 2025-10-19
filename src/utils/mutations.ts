@@ -123,7 +123,12 @@ export function updateTokenDayData(token: Token, event: ethereum.Event): TokenDa
     return tokenDayData as TokenDayData;
 }
 
-export function createLPPosition(event: ethereum.Event, to: Address, amount: BigInt, tokenId: BigInt | null) {
+export function createLPPosition(
+    event: ethereum.Event,
+    to: Address,
+    amount: BigInt,
+    tokenId: BigInt | null,
+): LiquidityPosition {
     const poolId = event.address.toHex();
     const pool = Pool.load(poolId) as Pool;
     const userId = to.toHex();
@@ -153,7 +158,7 @@ export function createLPPosition(event: ethereum.Event, to: Address, amount: Big
     return position;
 }
 
-export function createGaugePosition(event: ethereum.Event, to: Address, amount: BigInt) {
+export function createGaugePosition(event: ethereum.Event, to: Address, amount: BigInt): GaugePosition {
     const gaugeId = event.address.toHex();
     const gauge = Gauge.load(gaugeId) as Gauge;
     const userId = to.toHex();
@@ -179,4 +184,5 @@ export function createGaugePosition(event: ethereum.Event, to: Address, amount: 
 
     position.amountDeposited = position.amountDeposited.plus(divideByBase(amount, 18));
     position.save();
+    return position;
 }

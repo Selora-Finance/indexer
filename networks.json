@@ -5,16 +5,20 @@
             "startBlock": 5987331
         },
         "CLFactory": {
-            "address": "0x74359B347D1225377577091392360C3FA0464468"
+            "address": "0x74359B347D1225377577091392360C3FA0464468",
+            "startBlock": 6051145
         },
         "Voter": {
-            "address": "0x15227B716624d73f455dAd6D5931017fF6E19bE9"
+            "address": "0x15227B716624d73f455dAd6D5931017fF6E19bE9",
+            "startBlock": 5987397
         },
         "VotingEscrow": {
-            "address": "0xB8cB2492ebA6dBac44f89bF994Be602249015026"
+            "address": "0xB8cB2492ebA6dBac44f89bF994Be602249015026",
+            "startBlock": 5987368
         },
         "NonfungiblePositionManager": {
-            "address": "0x24e95fe9fF4D4F988911cfd9A5D9443b3E640C22"
+            "address": "0x24e95fe9fF4D4F988911cfd9A5D9443b3E640C22",
+            "startBlock": 6051182
         }
     }
 }
