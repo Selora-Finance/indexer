@@ -1,88 +1,58 @@
-import { Gauge } from 'generated';
-import { deriveId } from '../../utils/misc';
-import { getAddress } from 'viem';
-import { Gauge_t, Token_t, User_t } from 'generated/src/db/Entities.gen';
-import { createGaugePosition } from '../../utils/mutations';
+import { Gauge, Token, User } from '../../../generated/schema';
+import {
+    Gauge as GaugeContract,
+    Deposit as DepositEvent,
+    Withdraw as WithdrawEvent,
+    NotifyReward as NotifyRewardEvent,
+    ClaimRewards as ClaimRewardsEvent,
+} from '../../../generated/templates/Gauge/Gauge';
 import { divideByBase } from '../../utils/math';
-import { Gauge as OnchainGauge } from '../../utils/onchain/gauge';
+import { createGaugePosition } from '../../utils/mutations';
 
-Gauge.Deposit.handlerWithLoader({
-    loader: async ({ event, context }) => {
-        const gaugeId = deriveId(getAddress(event.srcAddress), event.chainId);
-        const gauge = (await context.Gauge.get(gaugeId)) as Gauge_t;
-        return { gauge };
-    },
-    handler: async ({ event, context, loaderReturn }) => {
-        let { gauge } = loaderReturn;
-        const userAddress = getAddress(event.params.to);
-        const depositorId = deriveId(userAddress, event.chainId);
-        let user = await context.User.get(depositorId);
+export function handleDeposit(event: DepositEvent): void {
+    const gauge = Gauge.load(event.address.toHex()) as Gauge;
+    const depositor = event.params.to;
+    let user = User.load(depositor.toHex());
 
-        if (!user) {
-            if (!user) {
-                user = {
-                    id: depositorId,
-                    address: userAddress,
-                };
-                context.User.set(user);
-            }
-        }
-        const amount = divideByBase(event.params.amount);
-        gauge = { ...gauge, totalSupply: gauge.totalSupply.plus(amount) };
-        context.Gauge.set(gauge);
-        await createGaugePosition(context, {
-            user,
-            gauge,
-            txId: event.transaction.hash,
-            amount,
-            blockNumber: event.block.number,
-        });
-    },
-});
+    if (user === null) {
+        user = new User(depositor.toHex());
+        user.address = depositor;
+        user.save();
+    }
 
-Gauge.Withdraw.handlerWithLoader({
-    loader: async ({ event, context }) => {
-        const gaugeId = deriveId(getAddress(event.srcAddress), event.chainId);
-        const gauge = (await context.Gauge.get(gaugeId)) as Gauge_t;
-        return { gauge };
-    },
-    handler: async ({ event, context, loaderReturn }) => {
-        let { gauge } = loaderReturn;
-        const userAddress = getAddress(event.params.from);
-        const withdrawerId = deriveId(userAddress, event.chainId);
-        const user = (await context.User.get(withdrawerId)) as User_t;
-        let amount = divideByBase(event.params.amount);
-        gauge = { ...gauge, totalSupply: gauge.totalSupply.minus(amount) };
-        context.Gauge.set(gauge);
-        amount = amount.negated();
-        await createGaugePosition(context, {
-            user,
-            gauge,
-            txId: event.transaction.hash,
-            amount,
-            blockNumber: event.block.number,
-        });
-    },
-});
+    const amount = divideByBase(event.params.amount);
+    gauge.totalSupply = gauge.totalSupply.plus(amount);
+    createGaugePosition(event, depositor, event.params.amount);
+}
 
-Gauge.NotifyReward.handler(async ({ event, context }) => {
-    const gaugeAddress = getAddress(event.srcAddress);
-    const gaugeId = deriveId(gaugeAddress, event.chainId);
-    let gauge = (await context.Gauge.get(gaugeId)) as Gauge_t;
-    const rewardToken = (await context.Token.get(gauge.rewardToken_id)) as Token_t;
-    const amount = divideByBase(event.params.amount, rewardToken.decimals);
-    const rate = await OnchainGauge.init(event.chainId, gaugeAddress).rewardRate();
-    const rewardRate = divideByBase(rate);
-    gauge = { ...gauge, rewardRate, emission: gauge.emission.plus(amount) };
-    context.Gauge.set(gauge);
-});
+export function handleWithdraw(event: WithdrawEvent): void {
+    const gaugeId = event.address.toHex();
+    const gauge = Gauge.load(gaugeId) as Gauge;
+    const amount = divideByBase(event.params.amount);
+    gauge.totalSupply = gauge.totalSupply.minus(amount);
+    gauge.save();
+    createGaugePosition(event, event.params.from, event.params.amount.neg());
+}
 
-Gauge.ClaimRewards.handler(async ({ event, context }) => {
-    const gaugeAddress = getAddress(event.srcAddress);
-    const gaugeId = deriveId(gaugeAddress, event.chainId);
-    let gauge = (await context.Gauge.get(gaugeId)) as Gauge_t;
-    const rewardToken = (await context.Token.get(gauge.rewardToken_id)) as Token_t;
-    const amount = divideByBase(event.params.amount, rewardToken.decimals);
-    gauge = { ...gauge, emission: gauge.emission.minus(amount) };
-    context.Gauge.set(gauge);
-});
+export function handleNotifyReward(event: NotifyRewardEvent): void {
+    const gaugeId = event.address.toHex();
+    const gauge = Gauge.load(gaugeId) as Gauge;
+    const token = Token.load(gauge.rewardToken) as Token;
+    const amount = divideByBase(event.params.amount, token.decimals);
+    const gaugeContract = GaugeContract.bind(event.address);
+    const rate = gaugeContract.try_rewardRate();
+    if (rate.reverted) return;
+    const rewardRate = divideByBase(rate.value);
+    gauge.rewardRate = rewardRate;
+    gauge.emission = gauge.emission.plus(amount);
+    gauge.save();
+}
+
+export function handleClaimRewards(event: ClaimRewardsEvent): void {
+    const gaugeId = event.address.toHex();
+    const gauge = Gauge.load(gaugeId) as Gauge;
+    const token = Token.load(gauge.rewardToken) as Token;
+    const amount = divideByBase(event.params.amount, token.decimals);
+    gauge.emission = gauge.emission.minus(amount);
+    gauge.save();
+}

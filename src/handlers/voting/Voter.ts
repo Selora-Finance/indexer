@@ -1,125 +1,123 @@
-import { Voter } from 'generated';
-import { Gauge_t, LockPosition_t, Pool_t } from 'generated/src/db/Entities.gen';
-import { getGeneratedByChainId } from 'generated/src/ConfigYAML.gen';
-import { getAddress } from 'viem';
+import { Address, log } from '@graphprotocol/graph-ts';
+import {
+    GaugeCreated as GaugeCreatedEvent,
+    GaugeKilled as GaugeKilledEvent,
+    GaugeRevived as GaugeRevivedEvent,
+    Voted as VotedEvent,
+} from '../../../generated/Voter/Voter';
+import { Gauge, LockPosition, Pool, Token, VotingRewards } from '../../../generated/schema';
+import { ERC20 } from '../../../generated/CLFactory/ERC20';
+import { Gauge as GaugeContract } from '../../../generated/templates/Gauge/Gauge';
 import { BD_ZERO, BI_ZERO } from '../../utils/constants';
-import { Gauge as OnchainGauge } from '../../utils/onchain/gauge';
-import { loadTokenDetails } from '../../utils/loaders';
-import { deriveId } from '../../utils/misc';
+import {
+    CLGauge as CLGaugeTemplate,
+    Gauge as GaugeTemplate,
+    VotingReward as VotingRewardTemplate,
+} from '../../../generated/templates';
 import { divideByBase } from '../../utils/math';
 
-Voter.GaugeCreated.contractRegister(
-    ({ event, context }) => {
-        const configuration = getGeneratedByChainId(event.chainId);
-        const v2PoolFactories = configuration.contracts.PoolFactory.addresses.map((address) => address.toLowerCase());
-        if (v2PoolFactories.includes(event.params.poolFactory.toLowerCase())) {
-            context.addGauge(event.params.gauge);
-        } else {
-            context.addCLGauge(event.params.gauge);
-        }
-        context.addVotingReward(event.params.feeVotingReward);
-        context.addVotingReward(event.params.bribeVotingReward);
-    },
-    { preRegisterDynamicContracts: true },
-);
+export function handleGaugeCreated(event: GaugeCreatedEvent): void {
+    const id = event.params.gauge.toHex();
+    const poolAddress = event.params.pool;
+    const poolId = poolAddress.toHex();
+    const pool = Pool.load(poolId) as Pool;
+    const gaugeContract = GaugeContract.bind(event.params.gauge);
+    const rewardTokenResult = gaugeContract.try_rewardToken();
+    if (rewardTokenResult.reverted) return;
+    const rewardTokenAddress = rewardTokenResult.value;
+    const rewardTokenId = rewardTokenAddress.toHex();
+    let rewardToken = Token.load(rewardTokenId);
 
-Voter.GaugeCreated.handlerWithLoader({
-    loader: async ({ event, context }) => {
-        const poolAddress = getAddress(event.params.pool);
-        const poolId = deriveId(poolAddress, event.chainId);
-        const pool = await context.Pool.get(poolId);
-        return { pool };
-    },
-    handler: async ({ event, context, loaderReturn }) => {
-        let { pool } = loaderReturn;
-        if (!pool) return;
-        const gaugeAddress = getAddress(event.params.gauge);
-        const gaugeId = deriveId(gaugeAddress, event.chainId);
-        let rewardToken = await OnchainGauge.init(event.chainId, gaugeAddress).rewardToken();
-        if (!rewardToken) return;
-        rewardToken = getAddress(rewardToken);
-        const tokenId = deriveId(rewardToken, event.chainId);
-        let token = await context.Token.get(tokenId);
+    if (rewardToken === null) {
+        rewardToken = new Token(rewardTokenId);
+        // Contract
+        const contract = ERC20.bind(rewardTokenAddress);
+        const symbol = contract.try_symbol();
+        const decimals = contract.try_decimals();
+        const name = contract.try_name();
 
-        if (!token) {
-            const _t = await loadTokenDetails(rewardToken, event.chainId);
-            if (!_t) {
-                context.log.error(`Could not fetch token details for ${rewardToken}`);
-                return; // Must pass
-            }
-            token = {
-                ..._t,
-                chainId: event.chainId,
-                address: rewardToken,
-                derivedETH: BD_ZERO,
-                derivedUSD: BD_ZERO,
-                totalLiquidity: BD_ZERO,
-                totalLiquidityUSD: BD_ZERO,
-                txCount: BI_ZERO,
-                tradeVolume: BD_ZERO,
-                tradeVolumeUSD: BD_ZERO,
-                totalLiquidityETH: BD_ZERO,
-            };
-
-            context.Token.set(token);
+        if (symbol.reverted || decimals.reverted || name.reverted) {
+            log.debug('Could not fetch token details', []);
+            return;
         }
 
-        const gauge: Gauge_t = {
-            id: gaugeId,
-            isAlive: true,
-            depositPool_id: pool.id,
-            address: gaugeAddress,
-            bribeVotingReward: event.params.bribeVotingReward,
-            feeVotingReward: event.params.feeVotingReward,
-            emission: BD_ZERO,
-            fees0: BD_ZERO,
-            fees1: BD_ZERO,
-            rewardRate: BD_ZERO,
-            rewardToken_id: token.id,
-            totalSupply: BD_ZERO,
-            chainId: event.chainId,
-        };
+        rewardToken.address = rewardTokenAddress;
+        rewardToken.derivedETH = BD_ZERO;
+        rewardToken.derivedUSD = BD_ZERO;
+        rewardToken.decimals = decimals.value;
+        rewardToken.symbol = symbol.value;
+        rewardToken.name = name.value;
+        rewardToken.totalLiquidity = BD_ZERO;
+        rewardToken.totalLiquidityETH = BD_ZERO;
+        rewardToken.totalLiquidityUSD = BD_ZERO;
+        rewardToken.tradeVolume = BD_ZERO;
+        rewardToken.tradeVolumeUSD = BD_ZERO;
+        rewardToken.txCount = BI_ZERO;
 
-        context.Gauge.set(gauge);
+        rewardToken.save();
+    }
 
-        pool = { ...pool, gauge_id: gauge.id };
-        context.Pool.set(pool);
-    },
-});
+    const gauge = new Gauge(id);
+    gauge.isAlive = true;
+    gauge.depositPool = pool.id;
+    gauge.address = event.params.gauge;
+    gauge.bribeVotingReward = event.params.bribeVotingReward;
+    gauge.feeVotingReward = event.params.feeVotingReward;
+    gauge.emission = BD_ZERO;
+    gauge.fees0 = BD_ZERO;
+    gauge.fees1 = BD_ZERO;
+    gauge.rewardRate = BD_ZERO;
+    gauge.rewardToken = rewardToken.id;
+    gauge.totalSupply = BD_ZERO;
 
-Voter.GaugeKilled.handler(async ({ context, event }) => {
-    const gaugeAddress = getAddress(event.params.gauge);
-    const gaugeId = deriveId(gaugeAddress, event.chainId);
-    let gauge = await context.Gauge.get(gaugeId);
-    if (!gauge) return; // Gauge must exist
-    gauge = { ...gauge, isAlive: false };
-    context.Gauge.set(gauge);
-});
+    gauge.save();
 
-Voter.GaugeRevived.handler(async ({ context, event }) => {
-    const gaugeAddress = getAddress(event.params.gauge);
-    const gaugeId = deriveId(gaugeAddress, event.chainId);
-    let gauge = await context.Gauge.get(gaugeId);
-    if (!gauge) return; // Gauge must exist
-    gauge = { ...gauge, isAlive: true };
-    context.Gauge.set(gauge);
-});
+    pool.gauge = gauge.id;
+    pool.save();
 
-Voter.Voted.handlerWithLoader({
-    loader: async ({ event, context }) => {
-        const lockId = deriveId(event.params.tokenId.toString(), event.chainId);
-        const poolAddress = getAddress(event.params.pool);
-        const poolId = deriveId(poolAddress, event.chainId);
-        const lock = (await context.LockPosition.get(lockId)) as LockPosition_t;
-        const pool = (await context.Pool.get(poolId)) as Pool_t;
-        return { lock, pool };
-    },
-    handler: async ({ event, context, loaderReturn }) => {
-        let { lock, pool } = loaderReturn;
-        const weight = divideByBase(event.params.weight);
-        pool = { ...pool, totalVotes: pool.totalVotes.plus(weight) };
-        lock = { ...lock, totalVoteWeightGiven: lock.totalVoteWeightGiven.plus(weight) };
-        context.Pool.set(pool);
-        context.LockPosition.set(lock);
-    },
-});
+    if (pool.poolType === 'CONCENTRATED') {
+        CLGaugeTemplate.create(event.params.gauge);
+    } else {
+        GaugeTemplate.create(event.params.gauge);
+    }
+
+    // Voting rewards
+    const feeVotingReward = new VotingRewards(gauge.feeVotingReward.toHex());
+    feeVotingReward.votingRewardsType = 'FEE';
+    feeVotingReward.gauge = gauge.id;
+    feeVotingReward.save();
+
+    const bribeVotingReward = new VotingRewards(gauge.bribeVotingReward.toHex());
+    bribeVotingReward.votingRewardsType = 'BRIBE';
+    bribeVotingReward.gauge = gauge.id;
+    bribeVotingReward.save();
+
+    VotingRewardTemplate.create(Address.fromBytes(gauge.feeVotingReward));
+    VotingRewardTemplate.create(Address.fromBytes(gauge.bribeVotingReward));
+}
+
+export function handleGaugeKilled(event: GaugeKilledEvent): void {
+    const gaugeId = event.params.gauge.toHex();
+    const gauge = Gauge.load(gaugeId);
+    if (gauge === null) return;
+    gauge.isAlive = false;
+    gauge.save();
+}
+
+export function handleGaugeRevived(event: GaugeRevivedEvent): void {
+    const gaugeId = event.params.gauge.toHex();
+    const gauge = Gauge.load(gaugeId);
+    if (gauge === null) return;
+    gauge.isAlive = true;
+    gauge.save();
+}
+
+export function handleVoted(event: VotedEvent): void {
+    const pool = Pool.load(event.params.pool.toHex()) as Pool;
+    const lock = LockPosition.load(event.params.tokenId.toString()) as LockPosition;
+    const weight = divideByBase(event.params.weight);
+    pool.totalVotes = pool.totalVotes.plus(weight);
+    lock.totalVoteWeightGiven = lock.totalVoteWeightGiven.plus(weight);
+    pool.save();
+    lock.save();
+}

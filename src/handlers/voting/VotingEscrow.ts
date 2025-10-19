@@ -1,188 +1,153 @@
-import { VotingEscrow } from 'generated';
-import { deriveId } from '../../utils/misc';
-import { getAddress, zeroAddress } from 'viem';
-import { BD_ZERO, BI_ZERO, LOCK_MAX_TIME, WEEK } from '../../utils/constants';
-import { LockPosition_t } from 'generated/src/db/Entities.gen';
+import {
+    Transfer as TransferEvent,
+    Deposit as DepositEvent,
+    Withdraw as WithdrawEvent,
+    DepositManaged as DepositManagedEvent,
+    CreateManaged as CreateManagedEvent,
+    WithdrawManaged as WithdrawManagedEvent,
+    Merge as MergeEvent,
+    Split as SplitEvent,
+    UnlockPermanent as UnlockPermanentEvent,
+    LockPermanent as LockPermanentEvent,
+} from '../../../generated/VotingEscrow/VotingEscrow';
+import { LockPosition, User } from '../../../generated/schema';
+import { BD_ZERO, BI_ZERO, LOCK_MAX_TIME, WEEK, ZERO_ADDRESS } from '../../utils/constants';
 import { divideByBase } from '../../utils/math';
 
-VotingEscrow.Transfer.handler(async ({ event, context }) => {
-    const recipient = getAddress(event.params.to);
+export function handleTransfer(event: TransferEvent): void {
+    const recipient = event.params.to;
     const tokenId = event.params.tokenId;
+    let lock = LockPosition.load(tokenId.toString());
+    let user = User.load(recipient.toHex());
 
-    const _lockId = deriveId(tokenId.toString(), event.chainId);
-    const _recipientId = deriveId(recipient, event.chainId);
-
-    let lock = await context.LockPosition.get(_lockId);
-    let rUser = await context.User.get(_recipientId);
-
-    if (!rUser) {
-        rUser = {
-            id: _recipientId,
-            address: recipient,
-        };
-
-        context.User.set(rUser);
+    if (user === null) {
+        user = new User(recipient.toHex());
+        user.address = recipient;
+        user.save();
     }
 
-    if (!lock) {
-        lock = {
-            id: _lockId,
-            lockId: tokenId,
-            lockType: 'NORMAL',
-            freeRewardManager: undefined,
-            lockRewardManager: undefined,
-            owner_id: zeroAddress,
-            chainId: event.chainId,
-            permanent: false,
-            creationTransaction: event.transaction.hash,
-            creationBlock: BigInt(event.block.number),
-            position: BD_ZERO,
-            unlockTime: BI_ZERO,
-            totalVoteWeightGiven: BD_ZERO,
-        };
+    if (lock === null) {
+        lock = new LockPosition(tokenId.toString());
+        lock.lockId = tokenId;
+        lock.lockType = 'NORMAL';
+        lock.freeRewardManager = null;
+        lock.lockRewardManager = null;
+        lock.owner = ZERO_ADDRESS;
+        lock.permanent = false;
+        lock.creationTransaction = event.transaction.hash;
+        lock.creationBlock = event.block.number;
+        lock.position = BD_ZERO;
+        lock.unlockTime = BI_ZERO;
+        lock.totalVoteWeightGiven = BD_ZERO;
     }
 
-    lock = { ...lock, owner_id: rUser.id };
-    context.LockPosition.set(lock);
-});
+    lock.owner = user.id;
+    lock.save();
+}
 
-VotingEscrow.Deposit.handlerWithLoader({
-    loader: async ({ event, context }) => {
-        const lockId = deriveId(event.params.tokenId.toString(), event.chainId);
-        const lock = (await context.LockPosition.get(lockId)) as LockPosition_t;
-        return { lock };
-    },
-    handler: async ({ event, context, loaderReturn }) => {
-        let { lock } = loaderReturn;
-        const amount = divideByBase(event.params.value);
-        lock = { ...lock, position: lock.position.plus(amount), unlockTime: event.params.locktime };
-        context.LockPosition.set(lock);
-    },
-});
+export function handleDeposit(event: DepositEvent): void {
+    const tokenId = event.params.tokenId;
+    const lock = LockPosition.load(tokenId.toString()) as LockPosition;
+    const amount = divideByBase(event.params.value);
+    lock.position = lock.position.plus(amount);
+    lock.unlockTime = lock.unlockTime;
+    lock.save();
+}
 
-VotingEscrow.Withdraw.handlerWithLoader({
-    loader: async ({ event, context }) => {
-        const lockId = deriveId(event.params.tokenId.toString(), event.chainId);
-        const lock = (await context.LockPosition.get(lockId)) as LockPosition_t;
-        return { lock };
-    },
-    handler: async ({ event, context, loaderReturn }) => {
-        let { lock } = loaderReturn;
-        const amount = divideByBase(event.params.value);
-        lock = { ...lock, position: lock.position.minus(amount) };
-        context.LockPosition.set(lock);
-    },
-});
+export function handleWithdraw(event: WithdrawEvent): void {
+    const tokenId = event.params.tokenId;
+    const lock = LockPosition.load(tokenId.toString()) as LockPosition;
+    const amount = divideByBase(event.params.value);
+    lock.position = lock.position.minus(amount);
+    lock.unlockTime = lock.unlockTime;
+    lock.save();
+}
 
-VotingEscrow.DepositManaged.handlerWithLoader({
-    loader: async ({ event, context }) => {
-        const lockId = deriveId(event.params._tokenId.toString(), event.chainId);
-        const mLockId = deriveId(event.params._mTokenId.toString(), event.chainId);
-        const lock = (await context.LockPosition.get(lockId)) as LockPosition_t;
-        const mLock = (await context.LockPosition.get(mLockId)) as LockPosition_t;
-        return { lock, mLock };
-    },
-    handler: async ({ event, context, loaderReturn }) => {
-        let { lock, mLock } = loaderReturn;
-        const amount = divideByBase(event.params._weight);
-        lock = { ...lock, position: lock.position.minus(amount) };
-        mLock = { ...mLock, position: lock.position.plus(amount) };
-        context.LockPosition.set(lock);
-        context.LockPosition.set(mLock);
-    },
-});
+export function handleDepositManaged(event: DepositManagedEvent): void {
+    const lockId = event.params._tokenId;
+    const mLockId = event.params._mTokenId;
+    const lock = LockPosition.load(lockId.toString()) as LockPosition;
+    const mLock = LockPosition.load(mLockId.toString()) as LockPosition;
+    const amount = divideByBase(event.params._weight);
+    lock.position = lock.position.minus(amount);
+    mLock.position = mLock.position.plus(amount);
+    lock.save();
+    mLock.save();
+}
 
-VotingEscrow.CreateManaged.handlerWithLoader({
-    loader: async ({ event, context }) => {
-        const lockId = deriveId(event.params._mTokenId.toString(), event.chainId);
-        const lock = (await context.LockPosition.get(lockId)) as LockPosition_t;
-        return { lock };
-    },
-    handler: async ({ event, context, loaderReturn }) => {
-        let { lock } = loaderReturn;
-        const freeRewardManager = getAddress(event.params._freeManagedReward);
-        const lockRewardManager = getAddress(event.params._lockedManagedReward);
-        lock = { ...lock, freeRewardManager, lockRewardManager, lockType: 'MANAGED' };
-        context.LockPosition.set(lock);
-    },
-});
+export function handleCreateManaged(event: CreateManagedEvent): void {
+    const lockId = event.params._mTokenId;
+    const lock = LockPosition.load(lockId.toString()) as LockPosition;
+    lock.freeRewardManager = event.params._freeManagedReward;
+    lock.lockRewardManager = event.params._lockedManagedReward;
+    lock.lockType = 'MANAGED';
+    lock.save();
+}
 
-VotingEscrow.WithdrawManaged.handlerWithLoader({
-    loader: async ({ event, context }) => {
-        const lockId = deriveId(event.params._tokenId.toString(), event.chainId);
-        const mLockId = deriveId(event.params._mTokenId.toString(), event.chainId);
-        const lock = (await context.LockPosition.get(lockId)) as LockPosition_t;
-        const mLock = (await context.LockPosition.get(mLockId)) as LockPosition_t;
-        return { lock, mLock };
-    },
-    handler: async ({ event, context, loaderReturn }) => {
-        let { lock, mLock } = loaderReturn;
-        const amount = divideByBase(event.params._weight);
+export function handleWithdrawManaged(event: WithdrawManagedEvent): void {
+    const lockId = event.params._tokenId;
+    const mLockId = event.params._mTokenId;
+    const lock = LockPosition.load(lockId.toString()) as LockPosition;
+    const mLock = LockPosition.load(mLockId.toString()) as LockPosition;
+    const amount = divideByBase(event.params._weight);
+    lock.position = amount;
+    lock.save();
 
-        lock = { ...lock, position: amount };
-        context.LockPosition.set(lock);
+    if (amount.lt(mLock.position)) {
+        mLock.position = amount;
+        mLock.save();
+    }
+}
 
-        if (amount < mLock.position) {
-            mLock = { ...mLock, position: amount };
-            context.LockPosition.set(mLock);
-        }
-    },
-});
+export function handleMerge(event: MergeEvent): void {
+    const fromLockId = event.params._from;
+    const toLockId = event.params._to;
+    const fromLock = LockPosition.load(fromLockId.toString()) as LockPosition;
+    const toLock = LockPosition.load(toLockId.toString()) as LockPosition;
+    const amountFrom = divideByBase(event.params._amountFrom);
+    const amountTo = divideByBase(event.params._amountTo);
+    const amountTotal = amountFrom.plus(amountTo);
+    fromLock.position = fromLock.position.minus(amountFrom);
+    fromLock.save();
+    toLock.position = amountTotal;
+    toLock.save();
+}
 
-VotingEscrow.Merge.handlerWithLoader({
-    loader: async ({ event, context }) => {
-        const fromLockId = deriveId(event.params._from.toString(), event.chainId);
-        const toLockId = deriveId(event.params._to.toString(), event.chainId);
-        const fromLock = (await context.LockPosition.get(fromLockId)) as LockPosition_t;
-        const toLock = (await context.LockPosition.get(toLockId)) as LockPosition_t;
-        return { fromLock, toLock };
-    },
-    handler: async ({ event, context, loaderReturn }) => {
-        let { fromLock, toLock } = loaderReturn;
-        const amountFrom = divideByBase(event.params._amountFrom);
-        const amountTo = divideByBase(event.params._amountTo);
-        const amountTotal = amountFrom.plus(amountTo);
-        fromLock = { ...fromLock, position: fromLock.position.minus(amountFrom) };
-        context.LockPosition.set(fromLock);
-        toLock = { ...toLock, position: amountTotal };
-        context.LockPosition.set(toLock);
-    },
-});
+export function handleSplit(event: SplitEvent): void {
+    const fromLockId = event.params._from;
+    const lock1Id = event.params._tokenId1;
+    const lock2Id = event.params._tokenId2;
+    const fromLock = LockPosition.load(fromLockId.toString()) as LockPosition;
+    const lock1 = LockPosition.load(lock1Id.toString()) as LockPosition;
+    const lock2 = LockPosition.load(lock2Id.toString()) as LockPosition;
+    const amount1 = divideByBase(event.params._splitAmount1);
+    const amount2 = divideByBase(event.params._splitAmount2);
+    fromLock.permanent = false;
+    fromLock.position = BD_ZERO;
+    fromLock.unlockTime = BI_ZERO;
+    fromLock.save();
 
-VotingEscrow.Split.handlerWithLoader({
-    loader: async ({ event, context }) => {
-        const fromLockId = deriveId(event.params._from.toString(), event.chainId);
-        const lock1Id = deriveId(event.params._tokenId1.toString(), event.chainId);
-        const lock2Id = deriveId(event.params._tokenId2.toString(), event.chainId);
-        const fromLock = (await context.LockPosition.get(fromLockId)) as LockPosition_t;
-        const lock1 = (await context.LockPosition.get(lock1Id)) as LockPosition_t;
-        const lock2 = (await context.LockPosition.get(lock2Id)) as LockPosition_t;
-        return { fromLock, lock1, lock2 };
-    },
-    handler: async ({ event, context, loaderReturn }) => {
-        let { fromLock, lock1, lock2 } = loaderReturn;
-        const amount1 = divideByBase(event.params._splitAmount1);
-        const amount2 = divideByBase(event.params._splitAmount2);
-        fromLock = { ...fromLock, permanent: false, position: BD_ZERO, unlockTime: BI_ZERO };
-        context.LockPosition.set(fromLock);
-        lock1 = { ...lock1, position: amount1, unlockTime: event.params._locktime };
-        context.LockPosition.set(lock1);
-        lock2 = { ...lock2, position: amount2, unlockTime: event.params._locktime };
-        context.LockPosition.set(lock2);
-    },
-});
+    lock1.position = amount1;
+    lock1.unlockTime = event.params._locktime;
+    lock1.save();
 
-VotingEscrow.LockPermanent.handler(async ({ event, context }) => {
-    const lockId = deriveId(event.params._tokenId.toString(), event.chainId);
-    let lock = (await context.LockPosition.get(lockId)) as LockPosition_t;
-    lock = { ...lock, permanent: true, unlockTime: BI_ZERO };
-    context.LockPosition.set(lock);
-});
+    lock2.position = amount2;
+    lock2.unlockTime = event.params._locktime;
+    lock2.save();
+}
 
-VotingEscrow.UnlockPermanent.handler(async ({ event, context }) => {
-    const lockId = deriveId(event.params._tokenId.toString(), event.chainId);
-    let lock = (await context.LockPosition.get(lockId)) as LockPosition_t;
-    const unlockTime = ((event.params._ts + LOCK_MAX_TIME) / WEEK) * WEEK;
-    lock = { ...lock, permanent: false, unlockTime };
-    context.LockPosition.set(lock);
-});
+export function handleLockPermanent(event: LockPermanentEvent): void {
+    const lockId = event.params._tokenId;
+    const lock = LockPosition.load(lockId.toString()) as LockPosition;
+    lock.permanent = true;
+    lock.unlockTime = BI_ZERO;
+    lock.save();
+}
+
+export function handleUnlockPermanent(event: UnlockPermanentEvent): void {
+    const lockId = event.params._tokenId;
+    const lock = LockPosition.load(lockId.toString()) as LockPosition;
+    lock.permanent = false;
+    lock.unlockTime = event.params._ts.plus(LOCK_MAX_TIME).div(WEEK).times(WEEK);
+    lock.save();
+}
