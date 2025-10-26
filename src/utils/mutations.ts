@@ -114,6 +114,7 @@ export function updateTokenDayData(token: Token, event: ethereum.Event): TokenDa
         tokenDayData.dailyTxns = BI_ZERO;
     }
     tokenDayData.priceUSD = token.derivedUSD;
+    tokenDayData.priceETH = token.derivedETH;
     tokenDayData.totalLiquidityToken = token.totalLiquidity;
     tokenDayData.totalLiquidityETH = token.totalLiquidity.times(token.derivedETH);
     tokenDayData.totalLiquidityUSD = token.totalLiquidity.times(token.derivedUSD);

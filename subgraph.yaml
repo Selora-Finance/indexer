@@ -169,6 +169,8 @@ templates:
           file: ./abis/V2Pool.json
         - name: Oracle
           file: ./abis/Oracle.json
+        - name: ERC20
+          file: ./abis/ERC20.json
       eventHandlers:
         - event: Swap(indexed address,indexed address,uint256,uint256,uint256,uint256)
           handler: handleSwap
@@ -199,6 +201,8 @@ templates:
           file: ./abis/V3Pool.json
         - name: Oracle
           file: ./abis/Oracle.json
+        - name: ERC20
+          file: ./abis/ERC20.json
       eventHandlers:
         - event: Swap(indexed address,indexed address,int256,int256,uint160,uint128,int24)
           handler: handleSwap
