@@ -374,7 +374,7 @@ export function handleTransfer(event: TransferEvent): void {
         pool.totalSupply = pool.totalSupply.plus(value);
         pool.save();
 
-        const mintId = transaction.id + ':' + event.logIndex.toString();
+        const mintId = deriveMintId(transaction.id);
         const mint = new Mint(mintId);
         mint.transaction = transaction.id;
         mint.timestamp = event.block.timestamp;
