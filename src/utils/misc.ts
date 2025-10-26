@@ -1,4 +1,4 @@
-import { Address, BigInt, dataSource } from '@graphprotocol/graph-ts';
+import { Address, dataSource } from '@graphprotocol/graph-ts';
 import { Oracle } from '../../generated/PoolFactory/Oracle';
 import { Bundle, Token } from '../../generated/schema';
 import { BD_ZERO, ORACLES, WETH, BD_ONE } from './constants';
