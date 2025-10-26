@@ -180,6 +180,8 @@ templates:
           handler: handleFees
         - event: Sync(uint256,uint256)
           handler: handleSync
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
       file: ./src/handlers/core/V2Pools.ts
   - name: CLPool
     kind: ethereum

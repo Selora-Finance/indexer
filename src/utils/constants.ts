@@ -12,6 +12,7 @@ export const WEEK = BigInt.fromU64(7 * 86400);
 
 // Zero address
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+export const ONE_ADDRESS = '0x0000000000000000000000000000000000000001';
 
 // Bigdecimals
 export const BD_ONE = BigDecimal.fromString('1');

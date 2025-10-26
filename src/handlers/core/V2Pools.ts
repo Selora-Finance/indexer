@@ -8,7 +8,7 @@ import {
     Fees as FeesEvent,
     Transfer as TransferEvent,
 } from '../../../generated/templates/Pool/V2Pool';
-import { BD_ZERO, BI_ONE, BI_ZERO, ZERO_ADDRESS } from '../../utils/constants';
+import { BD_ZERO, BI_ONE, BI_ZERO, ONE_ADDRESS, ZERO_ADDRESS } from '../../utils/constants';
 import { divideByBase } from '../../utils/math';
 import { deriveBurnId, deriveMintId, loadBundlePrice, loadTokenPrice } from '../../utils/misc';
 import {
@@ -367,7 +367,7 @@ export function handleTransfer(event: TransferEvent): void {
         transaction.save();
     }
 
-    const isMint = event.params.from.toHex() == ZERO_ADDRESS;
+    const isMint = event.params.from.toHex() == ZERO_ADDRESS && event.params.to.toHex() !== ONE_ADDRESS;
     const isBurn = event.params.to.toHex() == ZERO_ADDRESS;
 
     if (isMint) {
