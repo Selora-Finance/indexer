@@ -1,7 +1,7 @@
 import { Address, dataSource } from '@graphprotocol/graph-ts';
 import { Oracle } from '../../generated/PoolFactory/Oracle';
 import { Bundle, Token } from '../../generated/schema';
-import { BD_ZERO, ORACLES, WETH, BD_ONE } from './constants';
+import { ORACLES, WETH, BD_ONE } from './constants';
 import { divideByBase, multiplyByBase } from './math';
 
 export function deriveCLPosId(id: string): string {
@@ -28,8 +28,14 @@ export function loadTokenPrice(token: Token): Token {
         Address.fromString(token.id),
         multiplyByBase(BD_ONE, token.decimals),
     );
-    token.derivedUSD = usdPriceCall.reverted ? BD_ZERO : divideByBase(usdPriceCall.value.getValue0(), 6);
-    token.derivedETH = ethPriceCall.reverted ? BD_ZERO : divideByBase(ethPriceCall.value.getValue0());
+
+    if (!usdPriceCall.reverted) {
+        token.derivedUSD = divideByBase(usdPriceCall.value.value0);
+    }
+
+    if (!ethPriceCall.reverted) {
+        token.derivedETH = divideByBase(ethPriceCall.value.value0);
+    }
 
     token.save();
     return token;
@@ -46,7 +52,10 @@ export function loadBundlePrice(): Bundle {
         multiplyByBase(BD_ONE),
     );
 
-    bundle.ethPrice = usdPriceCall.reverted ? BD_ZERO : divideByBase(usdPriceCall.value.getValue0(), 6);
+    if (!usdPriceCall.reverted) {
+        bundle.ethPrice = divideByBase(usdPriceCall.value.value0);
+    }
+
     bundle.save();
     return bundle;
 }
