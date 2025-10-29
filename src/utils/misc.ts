@@ -1,4 +1,4 @@
-import { Address, dataSource } from '@graphprotocol/graph-ts';
+import { Address, dataSource, log } from '@graphprotocol/graph-ts';
 import { Oracle } from '../../generated/PoolFactory/Oracle';
 import { Bundle, Token } from '../../generated/schema';
 import { ORACLES, WETH, BD_ONE } from './constants';
@@ -20,6 +20,9 @@ export function loadTokenPrice(token: Token): Token {
     const networkName = dataSource.network();
     const oracleAddress = ORACLES.get(networkName) as string;
     const oracle = Oracle.bind(Address.fromString(oracleAddress));
+
+    log.info('Loading price for token {} through oracle {}', [token.id, oracleAddress]);
+
     const usdPriceCall = oracle.try_getAverageValueInUSD(
         Address.fromString(token.id),
         multiplyByBase(BD_ONE, token.decimals),
@@ -30,10 +33,12 @@ export function loadTokenPrice(token: Token): Token {
     );
 
     if (!usdPriceCall.reverted) {
+        log.info('USD price for token {} is {}', [token.id, usdPriceCall.value.value0.toString()]);
         token.derivedUSD = divideByBase(usdPriceCall.value.value0);
     }
 
     if (!ethPriceCall.reverted) {
+        log.info('ETH price for token {} is {}', [token.id, ethPriceCall.value.value0.toString()]);
         token.derivedETH = divideByBase(ethPriceCall.value.value0);
     }
 

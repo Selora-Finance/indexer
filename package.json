@@ -5,7 +5,7 @@
         "codegen": "graph codegen",
         "build": "graph build",
         "deploy": "graph deploy --node https://api.studio.thegraph.com/deploy/ cedarfi/indexer",
-        "goldsky:deploy": "goldsky subgraph deploy selora/v0.0.1",
+        "goldsky:deploy": "goldsky subgraph deploy",
         "create-local": "graph create --node http://localhost:8020/ cedarfi/indexer",
         "remove-local": "graph remove --node http://localhost:8020/ cedarfi/indexer",
         "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 cedarfi/indexer",
