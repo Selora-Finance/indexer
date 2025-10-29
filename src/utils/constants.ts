@@ -21,7 +21,7 @@ export const BD_ZERO = BigDecimal.zero();
 // Oracles
 export const ORACLES = new TypedMap<string, string>();
 ORACLES.set(MON_TESTNET, '0x5caa9d7fac6ef9ff9f50b95008ffb9f6299e8bcd');
-ORACLES.set(FLUENT_TESTNET, '0x924b04EdafC8E375388978291935a78C3DCdf7E5');
+ORACLES.set(FLUENT_TESTNET, '0x4186F4901Ac2ED69a137bd6eC9187E0b4601d3C2');
 
 // WETH
 export const WETH = new TypedMap<string, string>();
