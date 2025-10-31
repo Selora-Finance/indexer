@@ -11,13 +11,13 @@ import { CLPosition, LiquidityPosition, User } from '../../../generated/schema';
 export function handleTransfer(event: TransferEvent): void {
     const sender = event.params.from;
     const recipient = event.params.to;
-    const isBurn = recipient.toHex() === ZERO_ADDRESS;
-    const isTransfer = sender.toHex() !== ZERO_ADDRESS && recipient.toHex() !== ZERO_ADDRESS;
-    const isMint = sender.toHex() === ZERO_ADDRESS;
+    const isBurn = recipient.toHex() == ZERO_ADDRESS;
+    const isTransfer = sender.toHex() != ZERO_ADDRESS && recipient.toHex() != ZERO_ADDRESS;
+    const isMint = sender.toHex() == ZERO_ADDRESS;
     const tokenId = event.params.tokenId;
     let user = User.load(recipient.toHex());
 
-    if (user === null) {
+    if (user == null) {
         user = new User(recipient.toHex());
         user.address = recipient;
         user.save();

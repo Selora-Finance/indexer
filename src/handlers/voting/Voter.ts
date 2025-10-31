@@ -28,7 +28,7 @@ export function handleGaugeCreated(event: GaugeCreatedEvent): void {
     const rewardTokenId = rewardTokenAddress.toHex();
     let rewardToken = Token.load(rewardTokenId);
 
-    if (rewardToken === null) {
+    if (rewardToken == null) {
         rewardToken = new Token(rewardTokenId);
         // Contract
         const contract = ERC20.bind(rewardTokenAddress);
@@ -75,7 +75,7 @@ export function handleGaugeCreated(event: GaugeCreatedEvent): void {
     pool.gauge = gauge.id;
     pool.save();
 
-    if (pool.poolType === 'CONCENTRATED') {
+    if (pool.poolType == 'CONCENTRATED') {
         CLGaugeTemplate.create(event.params.gauge);
     } else {
         GaugeTemplate.create(event.params.gauge);
@@ -99,7 +99,7 @@ export function handleGaugeCreated(event: GaugeCreatedEvent): void {
 export function handleGaugeKilled(event: GaugeKilledEvent): void {
     const gaugeId = event.params.gauge.toHex();
     const gauge = Gauge.load(gaugeId);
-    if (gauge === null) return;
+    if (gauge == null) return;
     gauge.isAlive = false;
     gauge.save();
 }
@@ -107,7 +107,7 @@ export function handleGaugeKilled(event: GaugeKilledEvent): void {
 export function handleGaugeRevived(event: GaugeRevivedEvent): void {
     const gaugeId = event.params.gauge.toHex();
     const gauge = Gauge.load(gaugeId);
-    if (gauge === null) return;
+    if (gauge == null) return;
     gauge.isAlive = true;
     gauge.save();
 }

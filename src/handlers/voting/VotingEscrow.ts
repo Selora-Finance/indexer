@@ -20,13 +20,13 @@ export function handleTransfer(event: TransferEvent): void {
     let lock = LockPosition.load(tokenId.toString());
     let user = User.load(recipient.toHex());
 
-    if (user === null) {
+    if (user == null) {
         user = new User(recipient.toHex());
         user.address = recipient;
         user.save();
     }
 
-    if (lock === null) {
+    if (lock == null) {
         lock = new LockPosition(tokenId.toString());
         lock.lockId = tokenId;
         lock.lockType = 'NORMAL';

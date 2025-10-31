@@ -70,7 +70,7 @@ export function handleSwap(event: SwapEvent): void {
     const hash = event.transaction.hash.toHex();
     let transaction = Transaction.load(hash);
 
-    if (transaction === null) {
+    if (transaction == null) {
         transaction = new Transaction(hash);
         transaction.block = event.block.number;
         transaction.timestamp = event.block.timestamp;
@@ -185,7 +185,7 @@ export function handleMint(event: MintEvent): void {
     const hash = event.transaction.hash.toHex();
     let transaction = Transaction.load(hash);
 
-    if (transaction === null) {
+    if (transaction == null) {
         transaction = new Transaction(hash);
         transaction.block = event.block.number;
         transaction.timestamp = event.block.timestamp;
@@ -272,7 +272,7 @@ export function handleBurn(event: BurnEvent): void {
     const hash = event.transaction.hash.toHex();
     let transaction = Transaction.load(hash);
 
-    if (transaction === null) {
+    if (transaction == null) {
         transaction = new Transaction(hash);
         transaction.block = event.block.number;
         transaction.timestamp = event.block.timestamp;

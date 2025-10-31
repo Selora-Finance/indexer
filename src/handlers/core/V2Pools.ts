@@ -63,7 +63,7 @@ export function handleSwap(event: SwapEvent): void {
     const hash = event.transaction.hash.toHex();
     let transaction = Transaction.load(hash);
 
-    if (transaction === null) {
+    if (transaction == null) {
         transaction = new Transaction(hash);
         transaction.block = event.block.number;
         transaction.timestamp = event.block.timestamp;
@@ -165,7 +165,7 @@ export function handleMint(event: MintEvent): void {
     const hash = event.transaction.hash.toHex();
     let transaction = Transaction.load(hash);
 
-    if (transaction === null) {
+    if (transaction == null) {
         transaction = new Transaction(hash);
         transaction.block = event.block.number;
         transaction.timestamp = event.block.timestamp;
@@ -296,7 +296,7 @@ export function handleBurn(event: BurnEvent): void {
     const hash = event.transaction.hash.toHex();
     let transaction = Transaction.load(hash);
 
-    if (transaction === null) {
+    if (transaction == null) {
         transaction = new Transaction(hash);
         transaction.block = event.block.number;
         transaction.timestamp = event.block.timestamp;
@@ -359,7 +359,7 @@ export function handleTransfer(event: TransferEvent): void {
     const txId = hash.toHex();
     let transaction = Transaction.load(txId);
 
-    if (transaction === null) {
+    if (transaction == null) {
         transaction = new Transaction(txId);
         transaction.block = event.block.number;
         transaction.timestamp = event.block.timestamp;
@@ -367,7 +367,7 @@ export function handleTransfer(event: TransferEvent): void {
         transaction.save();
     }
 
-    const isMint = event.params.from.toHex() == ZERO_ADDRESS && event.params.to.toHex() !== ONE_ADDRESS;
+    const isMint = event.params.from.toHex() == ZERO_ADDRESS && event.params.to.toHex() != ONE_ADDRESS;
     const isBurn = event.params.to.toHex() == ZERO_ADDRESS;
 
     if (isMint) {
@@ -384,7 +384,7 @@ export function handleTransfer(event: TransferEvent): void {
         mint.save();
     }
 
-    if (event.params.to.toHex() === pool.id) {
+    if (event.params.to.toHex() == pool.id) {
         const burnId = deriveBurnId(transaction.id);
         const burn = new Burn(burnId);
         burn.transaction = transaction.id;
@@ -397,7 +397,7 @@ export function handleTransfer(event: TransferEvent): void {
         burn.save();
     }
 
-    if (isBurn && event.params.from.toHex() === pool.id) {
+    if (isBurn && event.params.from.toHex() == pool.id) {
         pool.totalSupply = pool.totalSupply.minus(value);
         pool.save();
 
@@ -420,14 +420,14 @@ export function handleTransfer(event: TransferEvent): void {
         }
     }
 
-    if (!isMint && event.params.from.toHex() !== pool.id) {
+    if (!isMint && event.params.from.toHex() != pool.id) {
         const userAddress = event.params.from;
         const balance = poolContract.try_balanceOf(userAddress);
         const amount = balance.reverted ? BI_ZERO : balance.value;
         createLPPosition(event, userAddress, amount, null);
     }
 
-    if (!isBurn && event.params.to.toHex() !== pool.id) {
+    if (!isBurn && event.params.to.toHex() != pool.id) {
         const userAddress = event.params.to;
         const balance = poolContract.try_balanceOf(userAddress);
         const amount = balance.reverted ? BI_ZERO : balance.value;
